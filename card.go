@@ -18,7 +18,10 @@ package trello
 
 import (
 	"encoding/json"
+	"errors"
 	"net/url"
+	"strconv"
+	"time"
 )
 
 type Card struct {
@@ -77,6 +80,20 @@ func (c *Client) Card(CardId string) (card *Card, err error) {
 	err = json.Unmarshal(body, &card)
 	card.client = c
 	return
+}
+
+func (c *Card) Created() (*time.Time, error) {
+	if len(c.Id) < 8 {
+		return nil, errors.New("Card does not have Id")
+	}
+	// The CardId has the creation date embedded in it's first
+	// 8 characters. Details: http://help.trello.com/article/759-getting-the-time-a-card-or-board-was-created
+	epoch, err := strconv.ParseInt(c.Id[:8], 16, 64)
+	if err != nil {
+		return nil, err
+	}
+	retval := time.Unix(epoch, 0)
+	return &retval, nil
 }
 
 func (c *Card) Checklists() (checklists []Checklist, err error) {
